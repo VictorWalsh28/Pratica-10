@@ -1,3 +1,2 @@
 coverage
 flask
-dependencia-invalida==0.0.1
