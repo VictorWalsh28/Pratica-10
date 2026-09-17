@@ -1,0 +1,63 @@
+name: Pratica 10 - Diagnostico de Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Executar build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+
+  unit-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar dependencias de teste
+        run: pip install -r tests/requirements.txt
+      - name: Executar testes unitarios
+        run: |
+          python -m coverage run -m unittest -v tests/appTest.py
+          python -m coverage report
+
+  semgrep-sast:
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Gerar analise SAST
+        run: python security_check.py || true
+
+  check-sast-report:
+    needs: semgrep-sast
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validar relatorio SAST
+        run: python security_check.py

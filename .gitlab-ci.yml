@@ -1,0 +1,33 @@
+stages:
+  - build
+  - test
+  - validate
+
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker build -t pratica10 .
+
+unit-test:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install -r tests/requirements.txt
+  script:
+    - python -m coverage run -m unittest -v tests/appTest.py
+    - python -m coverage report
+
+semgrep-sast:
+  stage: test
+  image: python:3.11
+  script:
+    - python security_check.py || true
+
+check-sast-report:
+  stage: validate
+  image: python:3.11
+  script:
+    - python security_check.py
